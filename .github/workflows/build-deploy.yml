@@ -7,7 +7,7 @@ on:
     branches: [ "**" ]
 
 jobs:
-    docker-build:
+    build-and-release:
       name: Build Docker Image
       runs-on: ubuntu-latest  
       steps:  
@@ -35,3 +35,29 @@ jobs:
             run: |
               docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG .
               docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
+    deploy-dev:
+      runs-on: 'ubuntu-latest'
+      environment: 'dev'
+      needs: build-and-release
+      steps:
+        - name: Setup AWS ECR Details
+          uses: aws-actions/configure-aws-credentials@v1
+          with:
+            aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+            aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+            aws-region: ${{secrets.AWS_REGION}}
+        
+        - name: Login to Amazon ECR
+          id: login-pf-aws-ecr
+          uses: aws-actions/amazon-ecr-login@v1
+        
+        - name: push-to-dev
+          env:
+            ECR_REGISTRY: ${{ steps.login-pf-aws-ecr.outputs.registry }}
+            ECR_RELEASE_REPO: ${{secrets.AWS_ECR_RELEASE_REPO}}
+            ECR_DEPLOY_REPO: ${{secrets.AWS_ECR_DEPLOY_REPO}}
+            IMAGE_TAG: latest
+          run:
+            docker pull $ECR_REGISTRY/$ECR_RELEASE_REPO:$IMAGE_TAG
+            docker tag $ECR_REGISTRY/$ECR_RELEASE_REPO:$IMAGE_TAG $ECR_REGISTRY/$ECR_DEPLOY_REPO:$IMAGE_TAG
+            docker push $ECR_REGISTRY/$ECR_DEPLOY_REPO:$IMAGE_TAG
