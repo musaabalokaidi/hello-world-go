@@ -57,7 +57,7 @@ jobs:
             ECR_RELEASE_REPO: ${{secrets.AWS_ECR_RELEASE_REPO}}
             ECR_DEPLOY_REPO: ${{secrets.AWS_ECR_DEPLOY_REPO}}
             IMAGE_TAG: latest
-          run:
+          run: |
             docker pull $ECR_REGISTRY/$ECR_RELEASE_REPO:$IMAGE_TAG
             docker tag $ECR_REGISTRY/$ECR_RELEASE_REPO:$IMAGE_TAG $ECR_REGISTRY/$ECR_DEPLOY_REPO:$IMAGE_TAG
             docker push $ECR_REGISTRY/$ECR_DEPLOY_REPO:$IMAGE_TAG
